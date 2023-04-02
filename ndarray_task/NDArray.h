@@ -8,6 +8,7 @@
 #include <functional>
 #include <iostream>
 #include <vector>
+#include <cstring>
 using std::function;
 
 
