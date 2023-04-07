@@ -38,5 +38,22 @@ int main() {
     arr_i[0].slice(-2)=4;
     println(arr_i);
 
+    //присвоение и получение элемента
+    arr_i[0][1][0] = 24;
+    println(arr_i[0][1].get(0));
+
+    //транспонирование и перемножение
+    arr_i.reshape({3,4});
+    NDArray<int> tr = arr_i.transpose();
+    NDArray<int> product = arr_i.mul(tr);
+    println(arr_i);
+    println(tr);
+    println(product);
+
+    //сортировка и разворот
+    NDArray<int> sorted = product.slice(1).sort();
+    println(sorted);
+    println(sorted.reverse());
+
     return 0;
 }

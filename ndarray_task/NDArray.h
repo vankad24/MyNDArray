@@ -14,13 +14,13 @@ using std::function;
 
 struct InvalidIndexException : public std::exception {
     const char *what() const throw() {
-        return "Invalid index";
+        return "Index out of bounds exception";
     }
 };
 
-struct ArrayIndexException : public std::exception {
+struct InvalidShapeException : public std::exception {
     const char *what() const throw() {
-        return "Index out of bounds exception";
+        return "Invalid shape";
     }
 };
 
@@ -118,9 +118,12 @@ public:
 
     NDArray operator[](int index) {
         if (index < 0) index+=_shape[0];
-        if (index >= _shape[0] || index<0)throw ArrayIndexException();
-        std::vector<unsigned int> v = _shape;
-        v.erase(v.begin(),v.begin()+1);
+        if (index >= _shape[0] || index<0)throw InvalidIndexException();
+        std::vector<unsigned int> v;
+        if (_shape.size()>1){
+            v = _shape;
+            v.erase(v.begin(),v.begin()+1);
+        }else v = {1};
         NDArray<T> arr;
         arr.sliced = true;
         arr.setShape(v);
@@ -129,9 +132,9 @@ public:
     }
 
     T& get(int index) {
-        if (_shape.empty())throw ArrayIndexException();
+        if (_shape.empty())throw InvalidIndexException();
         if (index < 0) index += _shape[0];
-        if (index >= _shape[0])throw ArrayIndexException();
+        if (index >= _shape[0])throw InvalidIndexException();
         return _data[index];
     }
 
@@ -375,7 +378,7 @@ public:
         if (end < 0) end+=_shape[0];
         if (start >= _shape[0] || start<0 ||
                 end > _shape[0] || end<0 ||
-                start>end)throw ArrayIndexException();
+                start>end)throw InvalidIndexException();
         std::vector<unsigned int> v = _shape;
         v[0] = end-start;
         NDArray<T> arr;
@@ -401,7 +404,7 @@ public:
         return _data;
     }
 
-    /*NDArray &reverse(){
+    NDArray &reverse(){
         T temp;
         int index, end = _length >> 1u;
         for (int i = 0; i < end; ++i) {
@@ -414,11 +417,46 @@ public:
     }
 
     NDArray &sort(bool descending = false){
-        sorts::heapSort(_data, _length);
+        T temp;
+        int prepareRoot = _length / 2 - 1;
+        int root, left, right;
+        for (int limit = _length; limit > 0;) {
+            root = prepareRoot;
+            temp = _data[root];
+            while (true) {
+                left = root * 2 + 1, right = root * 2 + 2;
+                if (right < limit) {
+                    if (temp < _data[left] || temp < _data[right]) {
+                        if (_data[left] < _data[right]) {
+                            _data[root] = _data[right];
+                            root = right;
+                        } else {
+                            _data[root] = _data[left];
+                            root = left;
+                        }
+                    } else {
+                        _data[root] = temp;
+                        break;
+                    }
+                } else if (left < limit && temp < _data[left]) {
+                    _data[root] = _data[left];
+                    root = left;
+                } else {
+                    _data[root] = temp;
+                    break;
+                }
+            }
+            if (prepareRoot)prepareRoot--;
+            else {
+                temp = _data[0];
+                _data[0] = _data[--limit];
+                _data[limit] = temp;
+            }
+        }
 		if (descending)reverse();
         return *this;
     }
-    */
+
     T sum(){
         T sum = get(0);
         for (int i = 1; i < _length; i++)
@@ -430,6 +468,33 @@ public:
         return sum()/length();
     }
 
+    NDArray transpose(){
+        if (_shape.size()!=2)throw InvalidShapeException();
+        NDArray result({_shape[1],_shape[0]});
+        for (int i = 0; i < _shape[1]; ++i) {
+            for (int j = 0; j < _shape[0]; ++j) {
+                result._data[i*_shape[0]+j] = _data[j*_shape[1]+i];
+            }
+        }
+        return result;
+    }
+
+    NDArray mul(const NDArray& arr){
+        if (_shape.size()!=2 || arr._shape.size()!=2 || _shape[1] != arr._shape[0])throw InvalidShapeException();
+
+        NDArray result({_shape[0],arr._shape[1]});
+        for (int i = 0; i < arr._shape[1]; ++i) {
+            for (int j = 0; j < _shape[0]; ++j) {
+                T s = _data[j*_shape[1]]*arr._data[i];
+                for (int k = 1; k < _shape[1]; ++k) {
+                    s+=_data[j*_shape[1]+k]*arr._data[k*arr._shape[1]+i];
+                }
+                result._data[j*result._shape[1]+i] = s;
+            }
+        }
+
+        return result;
+    }
     //iterator
     template<typename ValueType>
     class MyIterator: public std::iterator<std::input_iterator_tag, ValueType>{
@@ -529,32 +594,3 @@ std::istream& operator >> (std::istream &in, NDArray<U> &arr){
 }
 
 #endif //MY_IDEAS_NDArray_H
-
-//fill
-//indexOf, lastIndexOf
-//contains
-//sum
-//min
-//max
-
-//extend constructor
-//copy constructor
-
-//forEach
-//map
-//count(bool func)
-
-//sort
-//reverse
-
-//equals
-//compare---
-//binary search
-//hash ---
-
-//slice
-
-//dimensions---
-
-//any
-//all

@@ -16,4 +16,4 @@ clean:
 	$(RM) $(OUT1)
 
 run: all
-	.\$(OUT1)
+	./$(OUT1)
