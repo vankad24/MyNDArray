@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS = --std=c++11 -Wall -pedantic
+CFLAGS = --std=c++11 -pedantic
 SOURCE1 = main.cpp
 OUT1 = main.exe
 
